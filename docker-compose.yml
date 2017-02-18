@@ -1,0 +1,108 @@
+version: '2'
+
+services:
+
+    application:
+
+        image: tianon/true
+
+        volumes:
+            #- ../example:/var/www/example
+
+    workspace:
+
+        build:
+            context: ./workspace
+            args:
+                #- APT_REPOSITORY=mirrors.ustc.edu.cn
+                #- NODE_REPOSITORY=https://npm.taobao.org/mirrors/node
+                #- YARN_REPOSITORY=https://registry.npm.taobao.org
+                #- NODE_VERSION=stable
+                #- TIME_ZONE=Asia/Hong_Kong
+                #- COMPOSER_ENABLE=true
+                #- COMPOSER_REPOSITORY=https://packagist.phpcomposer.com
+
+        ports:
+            - 2222:2222
+
+        volumes_from:
+            - application
+
+        tty: true
+
+    nginx:
+
+        build:
+            context: ./nginx
+            args:
+                #- APK_REPOSITORY=http://mirrors.ustc.edu.cn/alpine/latest-stable/main/
+                #- PHP_ENABLE=true
+                #- PHP_HOST=php
+
+        ports:
+            - 80:80
+            - 443:443
+
+        volumes:
+            - ./logs/nginx/:/var/log/nginx
+            - ./nginx/sites/:/etc/nginx/sites-available
+
+        volumes_from:
+            - application
+
+        links:
+            - php
+
+    php:
+
+        build:
+            context: ./php
+            args:
+                #- APT_REPOSITORY=mirrors.ustc.edu.cn
+                #- XDEBUG_ENABLE=false
+                #- GD_ENABLE=false
+                #- SOAP_ENABLE=false
+                #- ZIP_ENABLE=false
+                #- REDIS_ENABLE=false
+                #- MEMCACHED_ENABLE=false
+                #- MONGO_ENABLE=false
+                #- IMAGICK_ENABLE=false
+                #- OPCACHE_ENABLE=false
+                #- POSTGRESQL_ENABLE=false
+
+        volumes_from:
+            - application
+
+        expose:
+            - "9000"
+
+    mariadb:
+
+        build:
+            context: ./mariadb
+
+        ports:
+            - 3306:3306
+
+        volumes:
+            - ./data/mariadb:/var/lib/mysql
+
+        environment:
+            MYSQL_DATABASE: docker
+            MYSQL_USER: docker
+            MYSQL_PASSWORD: secret
+            MYSQL_ROOT_PASSWORD: root
+
+        ports:
+            - "3306:3306"
+
+    redis:
+
+        build:
+            context: ./redis
+
+        volumes:
+            - ./data/redis:/data
+
+        ports:
+            - 6379:6379
